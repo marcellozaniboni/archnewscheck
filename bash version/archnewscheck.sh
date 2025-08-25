@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 readonly URL="https://archlinux.org/feeds/news/"
-readonly DATA_FILE="archnews_temp_rss.xml"
-readonly NEWS_LIMIT=4
+readonly DATA_FILE="/tmp/archnews_temp_rss $RANDOM $(date +"%s").xml"
+readonly NEWS_LIMIT=4 # limit the number of displayed news
 
 ## returns 0 if the command is not found
 function check_command() {
@@ -16,15 +16,17 @@ function check_command() {
 if [ $(check_command "curl") -eq 0 -o \
 	$(check_command "xmllint") -eq 0 -o \
 	$(check_command "seq") -eq 0 -o \
-	$(check_command "sed") -eq 0 ]; then
-	echo "Error: one of the following commands not found: curl, sed, seq, xmllint"
+	$(check_command "sed") -eq 0 -o \
+	$(check_command "date") -eq 0 ]; then
+	echo "Error: one of the following commands not found: curl, date, sed, seq, xmllint"
 	exit 1
 fi
 
-curl -s --retry 3 --retry-delay 5 --retry-all-errors "$URL" > $DATA_FILE
+curl -s --retry 3 --retry-delay 5 --retry-all-errors "$URL" > "$DATA_FILE"
 status=$?
 if [ "$status" -ne "0" ]; then
 	echo "Error: unable to read Arch news feed, try again later"
+	rm -f "$DATA_FILE"
 	exit 1
 fi
 n_news=$(xmllint --xpath 'count(//rss/channel/item/title/text())' "$DATA_FILE")
